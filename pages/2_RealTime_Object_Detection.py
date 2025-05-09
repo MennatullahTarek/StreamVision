@@ -1,42 +1,39 @@
 import streamlit as st
-from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
+import cv2
 import mediapipe as mp
-import av
 
-st.title("📦 Real-Time Object Detection (Cup)")
-
-mp_objectron = mp.solutions.objectron
+# Set up MediaPipe object detection
+mp_object_detection = mp.solutions.object_detection
 mp_drawing = mp.solutions.drawing_utils
 
-class ObjectronTransformer(VideoTransformerBase):
-    def __init__(self):
-        self.objectron = mp_objectron.Objectron(static_image_mode=False,
-                                                max_num_objects=5,
-                                                min_detection_confidence=0.5,
-                                                min_tracking_confidence=0.7,
-                                                model_name='Cup')
+st.title('Real-time Object Detection')
 
-    def transform(self, frame):
-        image = frame.to_ndarray(format="bgr24")
-        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # This line also uses OpenCV, needs removal
-        results = self.objectron.process(image_rgb)
+# Set up webcam for real-time video capture
+cap = cv2.VideoCapture(0)
 
-        if results.detected_objects:
-            for detected_object in results.detected_objects:
-                mp_drawing.draw_landmarks(
-                    image,
-                    detected_object.landmarks_2d,
-                    mp_objectron.BOX_CONNECTIONS
-                )
-                mp_drawing.draw_axis(
-                    image,
-                    detected_object.rotation,
-                    detected_object.translation
-                )
-        return image
+# Initialize object detection model
+with mp_object_detection.ObjectDetection(min_detection_confidence=0.5) as object_detection:
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            st.write("Failed to grab frame.")
+            break
 
-webrtc_streamer(
-    key="objectron-detect",
-    video_processor_factory=ObjectronTransformer,
-    media_stream_constraints={"video": True, "audio": False}
-)
+        # Convert BGR to RGB
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        # Detect objects
+        results = object_detection.process(rgb_frame)
+
+        # Draw object detections on the frame
+        if results.detections:
+            for detection in results.detections:
+                mp_drawing.draw_detection(frame, detection)
+
+        # Convert BGR back to RGB for Streamlit display
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        # Display the frame in the Streamlit app
+        st.image(frame_rgb, channels="RGB", use_column_width=True)
+
+    cap.release()
