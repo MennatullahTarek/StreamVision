@@ -1,30 +1,39 @@
 import streamlit as st
-from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
+import cv2
 import mediapipe as mp
-import av
 
+# Set up MediaPipe face detection
 mp_face_detection = mp.solutions.face_detection
 mp_drawing = mp.solutions.drawing_utils
 
-st.title("😀 Real-Time Face Detection (WebRTC)")
+st.title('Real-time Face Detection')
 
-class FaceDetectionTransformer(VideoTransformerBase):
-    def __init__(self):
-        self.face_detection = mp_face_detection.FaceDetection(model_selection=0, min_detection_confidence=0.5)
+# Set up webcam for real-time video capture
+cap = cv2.VideoCapture(0)
 
-    def transform(self, frame):
-        img = frame.to_ndarray(format="bgr24")
-        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)  # This line uses OpenCV, we need to remove it
-        results = self.face_detection.process(img_rgb)
+# Initialize face detection model
+with mp_face_detection.FaceDetection(min_detection_confidence=0.2) as face_detection:
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            st.write("Failed to grab frame.")
+            break
 
+        # Convert BGR to RGB
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        # Detect faces
+        results = face_detection.process(rgb_frame)
+
+        # Draw face detections on the frame
         if results.detections:
             for detection in results.detections:
-                mp_drawing.draw_detection(img, detection)
+                mp_drawing.draw_detection(frame, detection)
 
-        return img
+        # Convert BGR back to RGB for Streamlit display
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        
+        # Display the frame in the Streamlit app
+        st.image(frame_rgb, channels="RGB", use_column_width=True)
 
-webrtc_streamer(
-    key="face-detect",
-    video_processor_factory=FaceDetectionTransformer,
-    media_stream_constraints={"video": True, "audio": False}
-)
+    cap.release()
