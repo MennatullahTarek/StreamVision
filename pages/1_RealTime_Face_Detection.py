@@ -1,6 +1,5 @@
 import streamlit as st
 from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
-import cv2
 import mediapipe as mp
 import av
 
@@ -15,7 +14,7 @@ class FaceDetectionTransformer(VideoTransformerBase):
 
     def transform(self, frame):
         img = frame.to_ndarray(format="bgr24")
-        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)  # This line uses OpenCV, we need to remove it
         results = self.face_detection.process(img_rgb)
 
         if results.detections:
