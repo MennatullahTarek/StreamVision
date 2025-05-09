@@ -1,6 +1,5 @@
 import streamlit as st
 from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
-import cv2
 import mediapipe as mp
 import av
 
@@ -19,7 +18,7 @@ class ObjectronTransformer(VideoTransformerBase):
 
     def transform(self, frame):
         image = frame.to_ndarray(format="bgr24")
-        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # This line also uses OpenCV, needs removal
         results = self.objectron.process(image_rgb)
 
         if results.detected_objects:
