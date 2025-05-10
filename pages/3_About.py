@@ -1,19 +1,20 @@
 import streamlit as st
 
-st.title('About')
+st.title("About")
 
 st.write("""
-    This Streamlit app demonstrates real-time face and object detection using MediaPipe and OpenCV.
-    The app uses the webcam to detect faces and objects in real-time.
+This Streamlit app demonstrates real-time face and object detection using MediaPipe and OpenCV.
+
+It uses your webcam to detect faces (using MediaPipe's Face Detection solution) and displays the results in real-time.
+
+**Note:** Object detection is currently simulated. You may extend it with YOLO or TensorFlow Lite for better object detection capabilities.
 """)
 
-
 st.markdown("""
-
 **Technologies used:**
-- [Streamlit](https://streamlit.io) for UI
-- [MediaPipe](https://google.github.io/mediapipe/) for ML-powered face and object detection
-- [OpenCV](https://opencv.org/) for real-time webcam handling
+- [Streamlit](https://streamlit.io)
+- [MediaPipe](https://google.github.io/mediapipe/)
+- [OpenCV](https://opencv.org/)
 
 Created with ❤️ by MennatullahTarek.
 """)
