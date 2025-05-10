@@ -1,39 +1,35 @@
 import streamlit as st
 import cv2
 import mediapipe as mp
+import numpy as np
 
-# Set up MediaPipe object detection
-mp_object_detection = mp.solutions.object_detection
-mp_drawing = mp.solutions.drawing_utils
+st.set_page_config(layout="wide")
+st.title("Real-time Object Detection (Simulated)")
 
-st.title('Real-time Object Detection')
+st.warning("Note: MediaPipe doesn’t have general object detection. This is a placeholder.")
 
-# Set up webcam for real-time video capture
-cap = cv2.VideoCapture(0)
+start = st.button("Start Object Detection")
 
-# Initialize object detection model
-with mp_object_detection.ObjectDetection(min_detection_confidence=0.5) as object_detection:
-    while cap.isOpened():
+if start:
+    stframe = st.empty()
+    cap = cv2.VideoCapture(0)
+
+    while True:
         ret, frame = cap.read()
         if not ret:
-            st.write("Failed to grab frame.")
+            st.write("Unable to read from webcam. Exiting...")
             break
 
-        # Convert BGR to RGB
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame = cv2.flip(frame, 1)
 
-        # Detect objects
-        results = object_detection.process(rgb_frame)
+        # Simulate detection with a rectangle (placeholder)
+        height, width, _ = frame.shape
+        cv2.rectangle(frame, (100, 100), (width - 100, height - 100), (0, 255, 0), 2)
+        cv2.putText(frame, 'Simulated Object', (110, 90), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
-        # Draw object detections on the frame
-        if results.detections:
-            for detection in results.detections:
-                mp_drawing.draw_detection(frame, detection)
+        stframe.image(frame, channels="BGR")
 
-        # Convert BGR back to RGB for Streamlit display
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-        # Display the frame in the Streamlit app
-        st.image(frame_rgb, channels="RGB", use_column_width=True)
+        if st.button("Stop"):
+            break
 
     cap.release()
