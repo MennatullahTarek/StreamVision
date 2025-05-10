@@ -1,39 +1,39 @@
 import streamlit as st
 import cv2
 import mediapipe as mp
+import numpy as np
 
-# Set up MediaPipe face detection
-mp_face_detection = mp.solutions.face_detection
-mp_drawing = mp.solutions.drawing_utils
+st.set_page_config(layout="wide")
+st.title("Real-time Face Detection")
 
-st.title('Real-time Face Detection')
+start = st.button("Start Face Detection")
 
-# Set up webcam for real-time video capture
-cap = cv2.VideoCapture(0)
+if start:
+    mp_face_detection = mp.solutions.face_detection
+    mp_drawing = mp.solutions.drawing_utils
 
-# Initialize face detection model
-with mp_face_detection.FaceDetection(min_detection_confidence=0.2) as face_detection:
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            st.write("Failed to grab frame.")
-            break
+    stframe = st.empty()
+    cap = cv2.VideoCapture(0)
 
-        # Convert BGR to RGB
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    with mp_face_detection.FaceDetection(min_detection_confidence=0.5) as face_detection:
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                st.write("Unable to read from webcam. Exiting...")
+                break
 
-        # Detect faces
-        results = face_detection.process(rgb_frame)
+            frame = cv2.flip(frame, 1)
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            results = face_detection.process(rgb_frame)
 
-        # Draw face detections on the frame
-        if results.detections:
-            for detection in results.detections:
-                mp_drawing.draw_detection(frame, detection)
+            if results.detections:
+                for detection in results.detections:
+                    mp_drawing.draw_detection(frame, detection)
 
-        # Convert BGR back to RGB for Streamlit display
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        
-        # Display the frame in the Streamlit app
-        st.image(frame_rgb, channels="RGB", use_column_width=True)
+            stframe.image(frame, channels="BGR")
+
+            # Exit button
+            if st.button("Stop"):
+                break
 
     cap.release()
