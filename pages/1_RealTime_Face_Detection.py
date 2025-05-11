@@ -1,5 +1,37 @@
 import streamlit as st
 import cv2
+import numpy as np
+from PIL import Image
+
+st.title("🧑 Real-Time Face Detection")
+
+# Load Haar cascade
+face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+
+# Capture video
+run = st.checkbox('Start Webcam')
+
+FRAME_WINDOW = st.image([])
+
+cap = cv2.VideoCapture(0)
+
+while run:
+    ret, frame = cap.read()
+    if not ret:
+        st.warning("Failed to grab frame")
+        break
+
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(gray, 1.1, 4)
+
+    for (x, y, w, h) in faces:
+        cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+
+    FRAME_WINDOW.image(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+
+cap.release()
+import streamlit as st
+import cv2
 import mediapipe as mp
 import numpy as np
 
