@@ -13,7 +13,7 @@ st.title("🎯 Real-Time Object Detection with MediaPipe")
 st.markdown("Upload a video file and choose how you want it detected 👇")
 
 # Style options
-style = st.selectbox("🎨 Choose your detection style:", ["✅ Classic Detection", "🌈 Funky Mode"])
+style = st.selectbox("🎨 Choose your detection style:", ["✅ Classic Detection", "🤩 Funky Mode"])
 
 # Upload video
 uploaded_video = st.file_uploader("📹 Upload a video file", type=["mp4", "mov", "avi"])
@@ -43,9 +43,13 @@ if uploaded_video is not None:
         if not ret:
             break
 
-        # Convert frame to RGB and use it with MediaPipe Image class
+        # Convert frame to RGB
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        
+        # Use the correct way to create a MediaPipe image
         mp_image = vision.Image(image_format=vision.ImageFormat.SRGB, data=frame_rgb)
+        
+        # Detect objects using the MediaPipe detector
         detection_result = detector.detect(mp_image)
 
         for det in detection_result.detections:
