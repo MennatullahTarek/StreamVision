@@ -1,66 +1,74 @@
 import streamlit as st
-import cv2
 import tempfile
+import cv2
 import time
+import numpy as np
 from PIL import Image
+import random
+from mediapipe.tasks import python
+from mediapipe.tasks.python import vision
 
-st.set_page_config(page_title="🎭 Funky Face Detector", layout="centered")
-st.title("🕶️ Funky Real-Time Face Detection (Video Upload)")
-st.markdown("Upload a video and choose your detection style ✨")
+st.set_page_config(page_title="😎 Face Detection", layout="centered")
+st.title("😎 Real-Time Face Detection with MediaPipe")
+st.markdown("Upload a video and choose your funky face detection style ✨")
 
-# Mode selection
-mode = st.selectbox("🎨 Choose your detection style:", ["🧑‍🦲 Classic Face Detection", "😎 Funky Mode"])
+style = st.selectbox("🎭 Choose your detection style:", ["🟢 Classic Box", "🤩 Funky Mode"])
 
-uploaded_file = st.file_uploader("🎥 Upload your video file", type=["mp4", "avi", "mov"])
+uploaded_video = st.file_uploader("📼 Upload a video", type=["mp4", "mov", "avi"])
 
-if uploaded_file is not None:
-    tfile = tempfile.NamedTemporaryFile(delete=False) 
-    tfile.write(uploaded_file.read())
+# Load MediaPipe Face Detector
+@st.cache_resource
+def load_face_detector():
+    base_options = python.BaseOptions(model_asset_path="blaze_face_short_range.tflite")
+    options = vision.FaceDetectorOptions(base_options=base_options, min_detection_confidence=0.5)
+    return vision.FaceDetector.create_from_options(options)
 
-    st.success("✅ Video uploaded successfully!")
-    st.info("⏳ Processing video... please wait")
+if uploaded_video is not None:
+    with tempfile.NamedTemporaryFile(delete=False) as temp_video:
+        temp_video.write(uploaded_video.read())
+        temp_video_path = temp_video.name
 
-    # Load Haar cascade
-    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-
-    cap = cv2.VideoCapture(tfile.name)
+    detector = load_face_detector()
+    cap = cv2.VideoCapture(temp_video_path)
     FRAME_WINDOW = st.empty()
-
-    frame_rate = cap.get(cv2.CAP_PROP_FPS)
-    delay = 1.0 / frame_rate if frame_rate > 0 else 0.03
-
+    face_count = 0
     frame_count = 0
-    detected_faces = 0
 
-    with st.spinner("🎬 Detecting faces in each frame..."):
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                break
+    st.info("🧠 Detecting faces...")
 
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            faces = face_cascade.detectMultiScale(gray, 1.1, 4)
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
 
-            for (x, y, w, h) in faces:
-                detected_faces += 1
-                if mode == "🧑‍🦲 Classic Face Detection":
-                    cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 255), 2)
-                elif mode == "😎 Funky Mode":
-                    # Draw sunglasses
-                    cv2.rectangle(frame, (x + int(w * 0.15), y + int(h * 0.25)),
-                                  (x + int(w * 0.85), y + int(h * 0.45)), (0, 0, 0), -1)
-                    # Draw mustache
-                    cv2.ellipse(frame, (x + w//2, y + int(h * 0.75)), (w//4, h//10), 0, 0, 180, (0, 0, 0), -1)
+        mp_image = vision.Image(image_format=vision.ImageFormat.SRGB, data=cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+        detection_result = detector.detect(mp_image)
 
-            frame_count += 1
-            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            img = Image.fromarray(rgb_frame)
-            FRAME_WINDOW.image(img, caption=f"Frame {frame_count}", use_column_width=True)
-            time.sleep(delay)
+        for detection in detection_result.detections:
+            bbox = detection.bounding_box
+            x1, y1 = bbox.origin_x, bbox.origin_y
+            x2, y2 = x1 + bbox.width, y1 + bbox.height
+            x1, y1, x2, y2 = map(int, [x1, y1, x2, y2])
+            face_count += 1
+
+            if style == "🟢 Classic Box":
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                cv2.putText(frame, f"Face", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX,
+                            0.6, (0, 255, 0), 2)
+            else:
+                color = tuple(random.choices(range(256), k=3))
+                emoji = random.choice(["😎", "🤖", "👽", "🧠", "🎭", "😜"])
+                cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+                cv2.putText(frame, emoji, (x1 + 5, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX,
+                            1.0, color, 2)
+
+        img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        FRAME_WINDOW.image(img, caption=f"Frame {frame_count}", use_column_width=True)
+        time.sleep(0.02)
+        frame_count += 1
 
     cap.release()
-
-    st.success(f"🥳 Done! {detected_faces} faces found in {frame_count} frames.")
+    st.success(f"✔️ Finished! Detected {face_count} faces in {frame_count} frames.")
     st.balloons()
 else:
-    st.warning("📂 Please upload a video file to get started.")
+    st.warning("📂 Upload a video to begin.")
