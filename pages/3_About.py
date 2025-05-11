@@ -8,5 +8,5 @@ This is a simple real-time computer vision app built using:
 - Python
 - Hosted on [GitHub](https://github.com/)
 
-Created by [Your Name]
+Created with ❤️ by Mennatullah Tarek
 """)
