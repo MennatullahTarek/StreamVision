@@ -1,35 +1,40 @@
 import streamlit as st
 import cv2
-import mediapipe as mp
 import numpy as np
 
-st.set_page_config(layout="wide")
-st.title("Real-time Object Detection (Simulated)")
+st.title("📦 Real-Time Object Detection (COCO via MobileNet-SSD)")
 
-st.warning("Note: MediaPipe doesn’t have general object detection. This is a placeholder.")
+run = st.checkbox('Start Webcam')
 
-start = st.button("Start Object Detection")
+FRAME_WINDOW = st.image([])
 
-if start:
-    stframe = st.empty()
-    cap = cv2.VideoCapture(0)
+# Load model
+proto = "https://raw.githubusercontent.com/opencv/opencv/master/samples/dnn/face_detector/deploy.prototxt"
+model = "https://github.com/opencv/opencv_3rdparty/raw/dnn_samples_face_detector_20170830/res10_300x300_ssd_iter_140000.caffemodel"
 
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            st.write("Unable to read from webcam. Exiting...")
-            break
+net = cv2.dnn.readNetFromCaffe(proto, model)
 
-        frame = cv2.flip(frame, 1)
+cap = cv2.VideoCapture(0)
 
-        # Simulate detection with a rectangle (placeholder)
-        height, width, _ = frame.shape
-        cv2.rectangle(frame, (100, 100), (width - 100, height - 100), (0, 255, 0), 2)
-        cv2.putText(frame, 'Simulated Object', (110, 90), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+while run:
+    ret, frame = cap.read()
+    if not ret:
+        st.warning("Failed to grab frame")
+        break
 
-        stframe.image(frame, channels="BGR")
+    h, w = frame.shape[:2]
+    blob = cv2.dnn.blobFromImage(cv2.resize(frame, (300, 300)), 1.0,
+                                 (300, 300), (104.0, 177.0, 123.0))
+    net.setInput(blob)
+    detections = net.forward()
 
-        if st.button("Stop"):
-            break
+    for i in range(detections.shape[2]):
+        confidence = detections[0, 0, i, 2]
+        if confidence > 0.5:
+            box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
+            (x1, y1, x2, y2) = box.astype("int")
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
 
-    cap.release()
+    FRAME_WINDOW.image(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+
+cap.release()
