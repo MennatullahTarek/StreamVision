@@ -22,8 +22,7 @@ uploaded_video = st.file_uploader("📹 Upload a video file", type=["mp4", "mov"
 @st.cache_resource
 def load_model():
     base_options = python.BaseOptions(model_asset_path="efficientdet_lite0.tflite")
-    options = vision.ObjectDetectorOptions(base_options=base_options,
-                                           score_threshold=0.5)
+    options = vision.ObjectDetectorOptions(base_options=base_options, score_threshold=0.5)
     return vision.ObjectDetector.create_from_options(options)
 
 if uploaded_video is not None:
@@ -44,8 +43,9 @@ if uploaded_video is not None:
         if not ret:
             break
 
-        # Correcting the mp_image import
-        mp_image = vision.Image(image_format=vision.ImageFormat.SRGB, data=cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+        # Convert frame to RGB and use it with MediaPipe Image class
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        mp_image = vision.Image(image_format=vision.ImageFormat.SRGB, data=frame_rgb)
         detection_result = detector.detect(mp_image)
 
         for det in detection_result.detections:
