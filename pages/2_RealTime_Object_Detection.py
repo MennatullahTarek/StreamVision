@@ -44,7 +44,8 @@ if uploaded_video is not None:
         if not ret:
             break
 
-        mp_image = mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+        # Correcting the mp_image import
+        mp_image = vision.Image(image_format=vision.ImageFormat.SRGB, data=cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
         detection_result = detector.detect(mp_image)
 
         for det in detection_result.detections:
