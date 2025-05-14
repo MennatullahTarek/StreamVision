@@ -4,26 +4,51 @@ import mediapipe as mp
 from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
 import av
 
-st.set_page_config(page_title="😎 Real-Time Face Detection (Webcam)", layout="centered")
-st.title("😎 Real-Time Face Detection from Webcam")
+# MediaPipe Face Detection setup
+mp_face_detection = mp.solutions.face_detection
+mp_drawing = mp.solutions.drawing_utils
 
-class FaceDetectionTransformer(VideoTransformerBase):
+# Custom Video Transformer class for streamlit-webrtc
+class VideoTransformer(VideoTransformerBase):
     def __init__(self):
-        self.face_detection = mp.solutions.face_detection.FaceDetection(min_detection_confidence=0.5)
+        self.face_detection = mp_face_detection.FaceDetection(min_detection_confidence=0.2)
 
-    def transform(self, frame):
+    def transform(self, frame: av.VideoFrame) -> av.VideoFrame:
+        # Convert the frame to an OpenCV image
         img = frame.to_ndarray(format="bgr24")
-        results = self.face_detection.process(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+        
+        # Convert the image to RGB (for MediaPipe processing)
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        
+        # Detect faces
+        results = self.face_detection.process(img_rgb)
+        
+        # Draw face detections on the frame
         if results.detections:
             for detection in results.detections:
-                bboxC = detection.location_data.relative_bounding_box
-                ih, iw, _ = img.shape
-                bbox = int(bboxC.xmin * iw), int(bboxC.ymin * ih), \
-                       int(bboxC.width * iw), int(bboxC.height * ih)
-                cv2.rectangle(img, bbox, (0, 255, 0), 2)
-                score = round(detection.score[0] * 100, 2)
-                cv2.putText(img, f'{score}%', (bbox[0], bbox[1]-10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-        return img
+                mp_drawing.draw_detection(img, detection)
+        
+        # Return the frame back to Streamlit
+        return av.VideoFrame.from_ndarray(img, format="bgr24")
 
-webrtc_streamer(key="face-detect", video_processor_factory=FaceDetectionTransformer)
+# WebRTC streamer to display video
+def run_webrtc():
+    webrtc_streamer(
+        key="face-detection-webcam",
+        video_transformer_factory=VideoTransformer,
+        async_mode=True
+    )
+
+# Streamlit app UI
+def app():
+    st.title("Real-Time Face Detection with Webcam")
+    st.write(
+        "This app uses OpenCV and MediaPipe for real-time face detection. "
+        "It leverages streamlit-webrtc to stream webcam footage."
+    )
+    
+    run_webrtc()
+
+# Run the Streamlit app
+if __name__ == "__main__":
+    app()
