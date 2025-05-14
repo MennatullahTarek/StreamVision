@@ -1,8 +1,5 @@
 streamlit
 opencv-python-headless
 mediapipe
-Pillow
 streamlit-webrtc
-mesa
-
-
+av
